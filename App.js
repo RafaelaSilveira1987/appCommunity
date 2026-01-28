@@ -13,7 +13,7 @@ export default function App() {
   return (
     <AuthProvider>
       <NavigationContainer>
-        <StatusBar style="light" translucent backgroundColor="transparent" />
+        <StatusBar style="light" hidden={true} />
         <AuthStack />
       </NavigationContainer>
     </AuthProvider>

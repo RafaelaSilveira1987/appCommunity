@@ -5,16 +5,13 @@ import { StatusBar } from "expo-status-bar";
 export const setupImmersiveMode = async () => {
   if (Platform.OS === "android") {
     try {
-      // Torna a barra de navegação translúcida
-      await NavigationBar.setBackgroundColorAsync("#00000001");
+      // Oculta completamente a barra de navegação e a barra de status
+      await NavigationBar.setVisibilityAsync("hidden");
 
-      // Define comportamento da barra
-      await NavigationBar.setBehaviorAsync("overlay-swipe");
+      // Define o comportamento 'sticky-swipe': as barras aparecem ao deslizar e somem sozinhas depois
+      await NavigationBar.setBehaviorAsync("sticky-swipe");
 
-      // Botões aparecem em branco
-      await NavigationBar.setButtonStyleAsync("light");
-
-      // Posição da barra (default ou inset-bottom)
+      // Garante que o conteúdo se estenda por toda a tela
       await NavigationBar.setPositionAsync("absolute");
     } catch (error) {
       console.log("Erro ao configurar modo imersivo:", error);

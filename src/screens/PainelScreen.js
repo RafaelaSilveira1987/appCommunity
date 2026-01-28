@@ -169,6 +169,31 @@ export default function PainelScreen() {
     }
   }
 
+  const handleDateChange = (text) => {
+    // Se o usuário estiver apagando, não aplica a máscara para não travar
+    if (text.length < eventForm.event_date.length) {
+      setEventForm({ ...eventForm, event_date: text });
+      return;
+    }
+
+    // Remove tudo que não é dígito
+    let cleaned = text.replace(/\D/g, "");
+
+    // Limita a 8 dígitos (DDMMYYYY)
+    if (cleaned.length > 8) cleaned = cleaned.slice(0, 8);
+
+    // Aplica a máscara DD/MM/YYYY
+    let formatted = "";
+    for (let i = 0; i < cleaned.length; i++) {
+      if (i === 2 || i === 4) {
+        formatted += "/";
+      }
+      formatted += cleaned[i];
+    }
+
+    setEventForm({ ...eventForm, event_date: formatted });
+  };
+
   function openEventModal(event = null) {
     if (event) {
       setEditingEvent(event);
@@ -364,18 +389,17 @@ export default function PainelScreen() {
             ) : (
               <View style={styles.verseCard}>
                 <Text style={styles.verseText}>
-                  "Confia no Senhor de todo o teu coração e não te estribes no
-                  teu próprio entendimento."
+                  "O Senhor é o meu pastor, nada me faltará."
                 </Text>
-                <Text style={styles.verseReference}>Provérbios 3:5</Text>
+                <Text style={styles.verseReference}>Salmos 23:1</Text>
               </View>
             )}
           </View>
 
-          {/* Datas Importantes */}
+          {/* Eventos Importantes */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Eventos</Text>
+              <Text style={styles.sectionTitle}>Datas Importantes</Text>
               {isAdmin && (
                 <TouchableOpacity
                   style={styles.addButton}
@@ -386,12 +410,7 @@ export default function PainelScreen() {
               )}
             </View>
 
-            {events.length === 0 ? (
-              <View style={styles.emptyState}>
-                <CalendarIcon size={48} color="#ddd" />
-                <Text style={styles.emptyText}>Nenhum evento cadastrado</Text>
-              </View>
-            ) : (
+            {events.length > 0 ? (
               events.map((event) => {
                 const { day, month } = formatDate(event.event_date);
                 return (
@@ -414,7 +433,7 @@ export default function PainelScreen() {
                           style={styles.eventActionButton}
                           onPress={() => openEventModal(event)}
                         >
-                          <Edit size={18} color="#666" />
+                          <Edit size={18} color="#000" />
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={styles.eventActionButton}
@@ -427,6 +446,11 @@ export default function PainelScreen() {
                   </View>
                 );
               })
+            ) : (
+              <View style={styles.emptyState}>
+                <CalendarIcon size={40} color="#ccc" />
+                <Text style={styles.emptyText}>Nenhum evento programado</Text>
+              </View>
             )}
           </View>
         </ScrollView>
@@ -435,8 +459,8 @@ export default function PainelScreen() {
       {/* Modal de Evento */}
       <Modal
         visible={showEventModal}
-        transparent
-        animationType="fade"
+        animationType="slide"
+        transparent={true}
         onRequestClose={() => setShowEventModal(false)}
       >
         <View style={styles.modalOverlay}>
@@ -447,7 +471,7 @@ export default function PainelScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="Título do evento"
+              placeholder="Título do Evento"
               value={eventForm.title}
               onChangeText={(text) =>
                 setEventForm({ ...eventForm, title: text })
@@ -469,10 +493,9 @@ export default function PainelScreen() {
               style={styles.input}
               placeholder="Data (DD/MM/AAAA)"
               value={eventForm.event_date}
-              onChangeText={(text) =>
-                setEventForm({ ...eventForm, event_date: text })
-              }
+              onChangeText={handleDateChange}
               keyboardType="numeric"
+              maxLength={10}
             />
 
             <View style={styles.modalActions}>

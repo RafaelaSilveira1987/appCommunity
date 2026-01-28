@@ -80,8 +80,8 @@ export default function BottomTabs() {
           backgroundColor: "#ffffff",
           borderTopWidth: 1,
           borderTopColor: "#eee",
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 65,
+          paddingBottom: 10,
         },
         tabBarLabelStyle: {
           fontSize: 12,

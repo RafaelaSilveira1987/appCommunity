@@ -24,6 +24,7 @@ import {
   Lock,
   ChevronRight,
   X,
+  Edit2, // 🆕 Importando ícone de editar
 } from "lucide-react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -41,10 +42,17 @@ export default function ProfileScreen() {
   const [customRole, setCustomRole] = useState(user?.role || "");
 
   const handleSaveRole = async () => {
+    if (!customRole.trim()) {
+      Alert.alert("Erro", "A função não pode estar vazia");
+      setCustomRole(user?.role || "");
+      setEditingRole(false);
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("users")
-        .update({ role: customRole })
+        .update({ role: customRole.trim() })
         .eq("id", user.id);
 
       if (error) throw error;
@@ -52,7 +60,10 @@ export default function ProfileScreen() {
       Alert.alert("Sucesso", "Função atualizada!");
       setEditingRole(false);
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível atualizar");
+      console.error("Erro ao atualizar função:", error);
+      Alert.alert("Erro", "Não foi possível atualizar a função");
+      setCustomRole(user?.role || "");
+      setEditingRole(false);
     }
   };
 
@@ -219,27 +230,44 @@ export default function ProfileScreen() {
               <Text style={styles.infoValue}>{user?.sector || "-"}</Text>
             </View>
           </View>
-        </View>
 
-        <View style={styles.infoIcon}>
-          <User size={20} color="#0047AB" />
-        </View>
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLabel}>Função</Text>
-          {editingRole ? (
-            <TextInput
-              style={styles.infoInput}
-              value={customRole}
-              onChangeText={setCustomRole}
-              onBlur={handleSaveRole}
-              autoFocus
-              placeholder="Ex: Líder de Célula"
-            />
-          ) : (
-            <Text style={styles.infoValue}>
-              {user?.role || user?.is_admin ? "Administrador" : "Membro"}
-            </Text>
-          )}
+          {/* 🆕 CAMPO DE FUNÇÃO CORRIGIDO - DENTRO DO CARD */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoIcon}>
+              <User size={20} color="#000" />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Função</Text>
+              {editingRole ? (
+                <TextInput
+                  style={styles.infoInput}
+                  value={customRole}
+                  onChangeText={setCustomRole}
+                  onBlur={handleSaveRole}
+                  autoFocus
+                  placeholder="Ex: Líder de Célula"
+                  placeholderTextColor="#999"
+                />
+              ) : (
+                <Text style={styles.infoValue}>
+                  {user?.role || (user?.is_admin ? "Administrador" : "Membro")}
+                </Text>
+              )}
+            </View>
+            {/* Botão de editar */}
+            <TouchableOpacity
+              onPress={() => {
+                if (editingRole) {
+                  handleSaveRole();
+                } else {
+                  setEditingRole(true);
+                }
+              }}
+              style={styles.editButton}
+            >
+              <Edit2 size={18} color="#000" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Configurações */}
@@ -303,7 +331,7 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      {/* Modal de Alterar Senha */}
+      {/* Modal de Alteração de Senha */}
       <Modal
         visible={showPasswordModal}
         transparent
@@ -318,7 +346,7 @@ export default function ProfileScreen() {
                 onPress={() => setShowPasswordModal(false)}
                 style={styles.closeButton}
               >
-                <X size={24} color="#666" />
+                <X size={24} color="#000" />
               </TouchableOpacity>
             </View>
 
@@ -477,13 +505,19 @@ const styles = StyleSheet.create({
     color: "#000",
   },
 
-  foInput: {
+  infoInput: {
     fontSize: 16,
     fontWeight: "600",
     color: "#000",
-    borderBottomWidth: 1,
-    borderBottomColor: "#0047AB",
+    borderBottomWidth: 2,
+    borderBottomColor: "#fcd030",
     paddingVertical: 4,
+  },
+
+  // 🆕 Estilo para o botão de editar
+  editButton: {
+    padding: 8,
+    marginLeft: 8,
   },
 
   settingCard: {
@@ -617,7 +651,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   confirmButton: {
-    backgroundColor: "#0047AB",
+    backgroundColor: "#000000",
   },
   confirmButtonText: {
     fontSize: 16,

@@ -3,14 +3,18 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Users } from 'lucide-react-native';
 import { sectorColors } from '../utils/sectorColors';
 
-export default function GroupCard({ group }) {
-  const color = sectorColors[group.name] || '#ccc';
+export default function GroupCard({ group, index }) {
+  // Alternar entre preto (#000000) e amarelo (#fcd030)
+  const isEven = index % 2 === 0;
+  const bgColor = isEven ? '#000000' : '#fcd030';
+  const textColor = isEven ? '#fcd030' : '#000000';
+  const iconColor = isEven ? '#fcd030' : '#000000';
 
   return (
-    <View style={[styles.card, { borderLeftColor: color }]}>
+    <View style={[styles.card, { borderLeftColor: isEven ? '#000000' : '#fcd030' }]}>
       <View style={styles.header}>
-        <View style={[styles.iconContainer, { backgroundColor: color }]}>
-          <Users size={24} color="#ffffff" />
+        <View style={[styles.iconContainer, { backgroundColor: isEven ? '#000000' : '#fcd030' }]}>
+          <Users size={24} color={isEven ? '#fcd030' : '#000000'} />
         </View>
 
         <Text style={styles.title}>{group.name}</Text>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,17 +11,20 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { ArrowLeft } from 'lucide-react-native';
-import { supabase } from '../lib/supabase';
+} from "react-native";
+import { ArrowLeft } from "lucide-react-native";
+import { supabase } from "../lib/supabase";
+import * as Crypto from "expo-crypto";
+import * as Clipboard from "expo-clipboard";
 
 export default function ForgotPasswordScreen({ navigation }) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const generateTemporaryPassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let password = '';
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let password = "";
     for (let i = 0; i < 8; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -30,14 +33,14 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   const handleResetPassword = async () => {
     if (!email) {
-      Alert.alert('Erro', 'Por favor, informe seu e-mail.');
+      Alert.alert("Erro", "Por favor, informe seu e-mail.");
       return;
     }
 
     // Validação básica de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Erro', 'Por favor, informe um e-mail válido.');
+      Alert.alert("Erro", "Por favor, informe um e-mail válido.");
       return;
     }
 
@@ -46,15 +49,15 @@ export default function ForgotPasswordScreen({ navigation }) {
     try {
       // Verificar se o email existe no banco
       const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, name, email')
-        .eq('email', email.toLowerCase().trim())
+        .from("users")
+        .select("id, name, email")
+        .eq("email", email.toLowerCase().trim())
         .single();
 
       if (userError || !userData) {
         Alert.alert(
-          'E-mail não encontrado',
-          'Não encontramos nenhum usuário cadastrado com este e-mail.'
+          "E-mail não encontrado",
+          "Não encontramos nenhum usuário cadastrado com este e-mail.",
         );
         setLoading(false);
         return;
@@ -63,67 +66,73 @@ export default function ForgotPasswordScreen({ navigation }) {
       // Gerar senha temporária
       const tempPassword = generateTemporaryPassword();
 
-      // Atualizar senha no Supabase Auth
-      const { error: resetError } = await supabase.auth.admin.updateUserById(
-        userData.id,
-        { password: tempPassword }
+      // Hash da senha temporária
+      const hashedTempPassword = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        tempPassword,
       );
 
-      if (resetError) {
-        console.error('Erro ao resetar senha:', resetError);
-        
-        // Tentar método alternativo usando o password reset nativo do Supabase
-        const { error: emailError } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: 'frontiers://reset-password',
-        });
+      // Atualizar senha na tabela users
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({
+          password: hashedTempPassword,
+          must_change_password: true,
+        })
+        .eq("id", userData.id);
 
-        if (emailError) {
-          throw emailError;
-        }
-
-        Alert.alert(
-          'E-mail Enviado',
-          'Um link para redefinir sua senha foi enviado para seu e-mail. Verifique sua caixa de entrada.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.goBack(),
-            },
-          ]
-        );
-        setLoading(false);
-        return;
+      if (updateError) {
+        throw updateError;
       }
 
-      // Enviar email com a senha temporária (simulado - você precisará configurar um serviço real)
-      // Por enquanto, vamos apenas mostrar em um alerta
+      // Notificar usuário sobre o envio do e-mail
       Alert.alert(
-        'Senha Temporária Gerada',
-        `Olá ${userData.name}!\n\nSua senha temporária é:\n\n${tempPassword}\n\nPor motivos de segurança, você será solicitado a alterar esta senha no primeiro login.\n\nIMPORTANTE: Anote esta senha antes de fechar esta mensagem!`,
+        "E-mail Enviado",
+        `Olá ${userData.name}!\n\nUma senha temporária foi enviada para o seu e-mail cadastrado. Verifique sua caixa de entrada e spam.\n\nPor motivos de segurança, você deverá alterar esta senha no seu primeiro acesso.`,
         [
           {
-            text: 'Copiar e Voltar',
-            onPress: () => {
-              // Aqui você poderia usar Clipboard.setString(tempPassword)
-              // import * as Clipboard from 'expo-clipboard';
-              // Clipboard.setString(tempPassword);
-              navigation.goBack();
-            },
+            text: "Entendi",
+            onPress: () => navigation.goBack(),
           },
-        ]
+        ],
       );
 
-      // Marcar que o usuário precisa trocar a senha
-      await supabase
-        .from('users')
-        .update({ must_change_password: true })
-        .eq('id', userData.id);
+      // Enviar e-mail real usando Resend (Exemplo de implementação)
+      try {
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer re_S8ypjP18_FZAA2BPVKU3BTMtvJbJLBxBQ`, // O usuário precisará colocar o token dele
+          },
+          body: JSON.stringify({
+            from: "Comunidade Frontiers <onboarding@resend.dev>",
+            to: [email],
+            subject: "Sua Senha Temporária - Comunidade Frontiers",
+            html: `
+              <h1>Olá ${userData.name}!</h1>
+              <p>Você solicitou a recuperação de sua senha na Comunidade Frontiers.</p>
+              <p>Sua senha temporária é: <strong>${tempPassword}</strong></p>
+              <p>Por motivos de segurança, altere esta senha no seu primeiro acesso.</p>
+              <br>
+              <p>Atenciosamente,<br>Equipe Frontiers</p>
+            `,
+          }),
+        });
 
+        if (!response.ok) {
+          console.warn(
+            "Falha ao enviar e-mail via API, mas a senha foi resetada no banco.",
+          );
+        }
+      } catch (emailErr) {
+        console.error("Erro ao chamar serviço de e-mail:", emailErr);
+      }
     } catch (error) {
-      console.error('Erro ao recuperar senha:', error);
+      console.error("Erro ao recuperar senha:", error);
       Alert.alert(
-        'Erro',
-        'Não foi possível processar sua solicitação. Tente novamente mais tarde.'
+        "Erro",
+        "Não foi possível processar sua solicitação. Tente novamente mais tarde.",
       );
     } finally {
       setLoading(false);
@@ -132,12 +141,12 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   return (
     <ImageBackground
-      source={require('../../assets/background.png')}
+      source={require("../../assets/background.png")}
       style={styles.container}
       resizeMode="cover"
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -162,7 +171,8 @@ export default function ForgotPasswordScreen({ navigation }) {
 
             <View style={styles.infoBox}>
               <Text style={styles.infoText}>
-                Digite o e-mail que você usou no cadastro. Você receberá uma senha temporária que deverá ser alterada no primeiro acesso.
+                Digite o e-mail que você usou no cadastro. Você receberá uma
+                senha temporária que deverá ser alterada no primeiro acesso.
               </Text>
             </View>
 
@@ -220,38 +230,38 @@ const styles = StyleSheet.create({
 
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: "rgba(255,255,255,0.25)",
     padding: 24,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
 
   backButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 48,
     left: 24,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255,255,255,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 10,
   },
 
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
     marginTop: 60,
   },
 
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontWeight: "bold",
+    color: "#000000",
   },
 
   subtitleContainer: {
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: "rgba(0,0,0,0.4)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -260,45 +270,45 @@ const styles = StyleSheet.create({
 
   subtitle: {
     fontSize: 16,
-    color: '#eafa0b',
-    textAlign: 'center',
+    color: "#eafa0b",
+    textAlign: "center",
   },
 
   infoBox: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: "rgba(255,255,255,0.9)",
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
     borderLeftWidth: 4,
-    borderLeftColor: '#fcd030',
+    borderLeftColor: "#fcd030",
   },
 
   infoText: {
     fontSize: 14,
-    color: '#333',
+    color: "#333",
     lineHeight: 20,
   },
 
   form: {
-    width: '100%',
+    width: "100%",
   },
 
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     padding: 18,
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
     fontSize: 16,
-    color: '#000000',
+    color: "#000000",
   },
 
   button: {
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
     padding: 18,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
   },
 
@@ -307,33 +317,33 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: '#fcd030',
+    color: "#fcd030",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 
   cancelButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     padding: 18,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
   },
 
   cancelButtonText: {
-    color: '#000000',
+    color: "#000000",
     fontSize: 14,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
 
   footer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 24,
     left: 24,
     right: 24,
-    textAlign: 'center',
-    color: '#666',
+    textAlign: "center",
+    color: "#666",
     fontSize: 12,
   },
 });

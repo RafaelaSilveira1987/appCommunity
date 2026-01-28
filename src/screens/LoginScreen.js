@@ -37,7 +37,11 @@ export default function LoginScreen({ navigation }) {
     // LOG DO RESULTADO
     console.log("📋 Resultado do login:", result);
 
-    if (!result.success) {
+    if (result.success) {
+      if (result.requirePasswordChange) {
+        navigation.navigate("ChangePassword");
+      }
+    } else {
       Alert.alert("Erro de Acesso", result.message);
     }
   };
@@ -102,6 +106,14 @@ export default function LoginScreen({ navigation }) {
           >
             <Text style={styles.requestButtonText}>Solicitar Acesso</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.forgotButton}
+            onPress={() => navigation.navigate("ForgotPassword")}
+            disabled={loading}
+          >
+            <Text style={styles.forgotButtonText}>Esqueci minha senha</Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.footer}>v1.0.0 • 2026</Text>
@@ -130,7 +142,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#000000",
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0, 0, 0, 0.75)",
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
   },
 
   subtitleContainer: {
@@ -212,7 +227,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-
+  forgotButton: {
+    marginTop: 16,
+    backgroundColor: "#000000",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    alignSelf: "center",
+    paddingHorizontal: 20,
+  },
+  forgotButtonText: {
+    color: "#fcd030",
+    fontSize: 13,
+    fontWeight: "bold",
+  },
   footer: {
     position: "absolute",
     bottom: 24,

@@ -3,6 +3,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../contexts/AuthContext";
 import LoginScreen from "../screens/LoginScreen";
 import RequestAccessScreen from "../screens/RequestAccessScreen";
+import ForgotPasswordScreen from "../screens/ForgotScreen";
+import ChangePasswordScreen from "../screens/ChangeScreen ";
 
 import BottomTabs from "./BottomTabs";
 import CreatePostScreen from "../screens/CreatePostScreen";
@@ -27,6 +29,8 @@ export default function AuthStack() {
           {/* Telas para usuário NÃO logado */}
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="RequestAccess" component={RequestAccessScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         </>
       )}
     </Stack.Navigator>

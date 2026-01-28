@@ -85,14 +85,14 @@ export default function GroupsScreen({ navigation }) {
               </View>
             </>
           )}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() =>
                 navigation.navigate("GroupDetail", { group: item })
               }
             >
-              <GroupCard group={item} />
+              <GroupCard group={item} index={index} />
             </TouchableOpacity>
           )}
           ListEmptyComponent={() => (
